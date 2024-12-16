@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Recognition</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        canvas {
+            border: 1px solid black;
+            margin-bottom: 20px;
+        }
+
+        #reset, #submit {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #reset {
+            background-color: #ff6b6b;
+            color: white;
+        }
+
+        #reset:hover {
+            background-color: #e63946;
+        }
+
+        #submit {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        #submit:hover {
+            background-color: #388e3c;
+        }
+
+        #result {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #2c3e50;
+        }
+
+        @media (max-width: 600px) {
+            canvas {
+                width: 90%;
+                height: auto;
+            }
+
+            #reset, #submit {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+
+            #result {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Character Recognition</h1>
+    <canvas id="canvas" width="512" height="512"></canvas>
+    <div>
+        <button id="reset">Reset</button>
+        <button id="submit">Submit</button>
+    </div>
+    <p id="result"></p>
+
+    <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const resetButton = document.getElementById('reset');
+    const submitButton = document.getElementById('submit');
+    const result = document.getElementById('result');
+
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    let drawing = false;
+
+    // Event handlers for mouse
+    canvas.addEventListener('mousedown', () => { drawing = true; });
+    canvas.addEventListener('mouseup', () => { drawing = false; });
+    canvas.addEventListener('mousemove', draw);
+
+    // Event handlers for touch
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        drawing = true;
+        const touch = e.touches[0];
+        draw({ offsetX: touch.clientX - canvas.offsetLeft, offsetY: touch.clientY - canvas.offsetTop });
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!drawing) return;
+        const touch = e.touches[0];
+        draw({ offsetX: touch.clientX - canvas.offsetLeft, offsetY: touch.clientY - canvas.offsetTop });
+    });
+
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        drawing = false;
+    });
+
+    function draw(e) {
+        if (!drawing) return;
+        ctx.fillStyle = 'white';
+        ctx.fillRect(e.offsetX - 7, e.offsetY - 7, 14, 14);
+    }
+
+    resetButton.addEventListener('click', () => {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        result.textContent = '';
+    });
+
+    submitButton.addEventListener('click', () => {
+        const imageData = canvas.toDataURL('image/png');
+        fetch('/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `image_data=${encodeURIComponent(imageData)}`,
+        })
+            .then(response => response.json())
+            .then(data => {
+                result.textContent = `Prediction: ${data.prediction}`;
+            })
+            .catch(error => console.error('Error:', error));
+    });
+</script>
+
+</body>
+</html>
